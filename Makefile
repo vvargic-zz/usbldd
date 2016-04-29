@@ -1,13 +1,13 @@
 #!/bin/sh
 
-ifneq ($(KERNELRELEASE),)
 obj-m := usb_v1.o
 
-else
+PWD = $(shell pwd)
 KDIR ?= /lib/modules/`uname -r`/build
 
-default:
+all:
 	$(MAKE) -C $(KDIR) M=$$PWD
-endif
+clean:
+	rm -rf *.o *.ko *.mod.* *.symvers *.order *~
 
 
