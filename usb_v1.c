@@ -81,16 +81,42 @@ static struct usb_class_driver stm32_class = {
 static void usb_stm32_bulk(struct urb *urb)
 {
 	struct usb_stm32 *dev = urb->context;
+	int retval, i;
+	uint8_t *data = (uint8_t *)urb->transfer_buffer;
 	//int retval = 0;
 	
 	printk(KERN_ALERT "Bulk callback called.\n");
-	//if(globalLEDflag == 10)
+	if (urb->status)
 	{
-		//usb_submit_urb(dev->bulk_out_urb, GFP_ATOMIC);
+		printk(KERN_ALERT "Problem with received data (urb error).\n");
+	}
+	
+	if (urb->actual_length > 0)
+	{
+		for(i=0; i < (urb->actual_length); i++)
+		{
+			printk(KERN_ALERT " %d,",(uint8_t)dev->bulk_out_buffer[i]);
+		}
+
+	}
+	else
+	{
+		printk(KERN_ALERT "Data less than 0.\n");
+	}
+	
+	printk(KERN_ALERT "\n\n");
+	
+	//globalLEDflag++;
+	
+	
+	//if(globalLEDflag < 3)
+	{
+		//retval = usb_submit_urb(dev->bulk_out_urb, GFP_ATOMIC);
+		//if (retval) printk(KERN_ALERT "Bulk callback resubmit error.\n");
 		//globalLEDflag = 0;
 	}
-	//retval = usb_submit_urb (dev->int_in_urb, GFP_ATOMIC);
-	//if (retval) printk(KERN_ALERT "Bulk callback resubmit error.\n");
+	retval = usb_submit_urb (dev->bulk_out_urb, GFP_ATOMIC);
+	if (retval) printk(KERN_ALERT "Bulk callback resubmit error.\n");
 }
 
 static void usb_stm32_irq(struct urb *urb)
@@ -151,17 +177,13 @@ static int usb_stm32_probe(struct usb_interface *interface, const struct usb_dev
 	struct usb_host_interface *iface_desc;
 	struct usb_endpoint_descriptor *endpointI;
 	struct usb_endpoint_descriptor *endpointB;
-	uint8_t cmd[255];
  
 	int int_end_size;
 	int bulk_end_size;
 	
 	int retval = -ENODEV;
-		
-	//int pipe, maxp;
-	//int error = -ENOMEM;
+
 	printk(KERN_ALERT "Entering STM32 probe.\n");
-	
 	if (!udev)
 	{
 		printk(KERN_ALERT "UDEV is NULL\n");
@@ -183,13 +205,13 @@ static int usb_stm32_probe(struct usb_interface *interface, const struct usb_dev
 		return -ENODEV;
 	}
 	endpointI = &iface_desc->endpoint[0].desc;
-	//endpointB = &iface_desc->endpoint[1].desc;
+	//endpointB = &iface_desc->endpoint[0].desc;
 	if (!usb_endpoint_is_int_in(endpointI))
 	{
 		printk(KERN_ALERT "Failing INT endpoint  desc.\n");
 		return -ENODEV;
 	}
-	/*if (!usb_endpoint_is_bulk_out(endpointB))
+	/*if (!usb_endpoint_is_bulk_in(endpointB))
 	{
 		printk(KERN_ALERT "Failing BULK endpoint  desc.\n");
 		return -ENODEV;
@@ -213,8 +235,8 @@ static int usb_stm32_probe(struct usb_interface *interface, const struct usb_dev
 	if (!dev->int_in_buffer)
 	{
 		printk(KERN_ALERT "Int_in_buffer error.\n");
-	}
-	/*if (!dev->bulk_out_buffer)
+	}/*
+	if (!dev->bulk_out_buffer)
 	{
 		printk(KERN_ALERT "Bulk_out_buffer error.\n");
 	}*/
@@ -226,8 +248,8 @@ static int usb_stm32_probe(struct usb_interface *interface, const struct usb_dev
 	if (!dev->int_in_urb)
 	{
 		printk(KERN_ALERT "Could not allocate int_in_urb.\n");
-	}
-	/*if (!dev->bulk_out_urb)
+	}/*
+	if (!dev->bulk_out_urb)
 	{
 		printk(KERN_ALERT "Could not allocate bulk_out_urb.\n");
 	}*/
@@ -243,13 +265,13 @@ static int usb_stm32_probe(struct usb_interface *interface, const struct usb_dev
 	/*cmd[0] = 0x01;
 	cmd[1] = 0x25;
 	cmd[2] = 0x26;
-	cmd[3] = 0x27;
+	cmd[3] = 0x27;*/
 
-	dev->bulk_out_buffer = kmalloc(bulk_end_size, GFP_KERNEL);
-	if(copy_from_user(dev->bulk_out_buffer,cmd,bulk_end_size));
+	//dev->bulk_out_buffer = kmalloc(bulk_end_size, GFP_KERNEL);
+	//if(copy_from_user(dev->bulk_out_buffer,cmd,bulk_end_size));
 	//dev->bulk_out_buffer = cmd;
-	usb_fill_bulk_urb(dev->bulk_out_urb,dev->udev, 
-		usb_sndbulkpipe(dev->udev,
+	/*usb_fill_bulk_urb(dev->bulk_out_urb,dev->udev, 
+		usb_rcvbulkpipe(dev->udev,
 				dev->bulk_out_endpoint->bEndpointAddress),
 		dev->bulk_out_buffer,
 		bulk_end_size,
@@ -370,5 +392,4 @@ module_exit (usb_stm32_exit);
 MODULE_AUTHOR("Vjeks");
 MODULE_DESCRIPTION("STm32 USB driver");
 MODULE_LICENSE("GPL");
-
 
