@@ -1,0 +1,10 @@
+# mount -t debugfs none_debugs /sys/kernel/debug
+# modprobe usbmon
+
+
+cat /sys/kernel/debug/usb/usbmon/3u > /tmp/1.mon.out
+
+
+
+su -c "modprobe usbmon" && su -c "wireshark"
+
